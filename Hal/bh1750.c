@@ -1,6 +1,6 @@
 
 
-#include "./include/bh1750_shm.h"
+#include "../include/bh1750_shm.h"
 
 
 
