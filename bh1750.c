@@ -25,16 +25,21 @@
 static const char *TAG = "bh1750";
 
 
-Status_t bh1750_read(bh1750_i2c_dev_t* bh1750_dev, uint16_t *level)
+Status_t bh1750_read(bh1750_i2c_dev_t* bh1750_dev, uint16_t *lux_raw, float *lux_value) 
 {
+    if (!bh1750_dev || !lux_raw || !lux_value) return STATUS_ERROR;
+
     pthread_mutex_lock(&bh1750_dev->lock);
 
-    if(read(bh1750_dev->port,&bh1750_dev->read_buf,2) < 0)
+    if(read(bh1750_dev->port,bh1750_dev->read_buf,2) < 0)
     {
         pthread_mutex_unlock(&bh1750_dev->lock);
         return STATUS_ERROR;
 
     }
+
+    *lux_raw = (bh1750_dev->read_buf[0] << 8) | bh1750_dev->read_buf[1];
+    *lux_value = (float)(*lux_raw) / 1.2f;
 
     pthread_mutex_unlock(&bh1750_dev->lock);
 
@@ -47,6 +52,8 @@ Status_t send_command(bh1750_i2c_dev_t* bh1750_dev, uint8_t cmd)
 {
   
     pthread_mutex_lock(&bh1750_dev->lock);
+
+    bh1750_dev->write_buf[0] = cmd;
 
     if(write(bh1750_dev->port,bh1750_dev->write_buf,1) < 0)
     {
@@ -97,7 +104,7 @@ Status_t bh1750_setup(bh1750_i2c_dev_t *bh1750_dev, bh1750_mode_t mode, bh1750_r
         default:              opcode |= OPCODE_HIGH2; break;
     }
   
-    if(send_command(bh1750_dev->port,opcode) < 0)
+    if(send_command(bh1750_dev,opcode) < 0)
     return STATUS_ERROR;
 
     return STATUS_OK;
@@ -107,9 +114,9 @@ Status_t bh1750_setup(bh1750_i2c_dev_t *bh1750_dev, bh1750_mode_t mode, bh1750_r
 Status_t bh1750_set_measurement_time(bh1750_i2c_dev_t *bh1750_dev, uint8_t time)
 {
     
-    if(send_command(bh1750_dev->port,OPCODE_MT_HI | (time >> 5)) != STATUS_OK)
+    if(send_command(bh1750_dev,OPCODE_MT_HI | (time >> 5)) != STATUS_OK)
     return STATUS_ERROR;
-    if(send_command(bh1750_dev->port,OPCODE_MT_LO | (time & 0x1f) < 0))
+    if(send_command(bh1750_dev,OPCODE_MT_LO | (time & 0x1f) < 0))
     return STATUS_ERROR;
 
     return STATUS_OK;
@@ -129,6 +136,14 @@ Status_t bh1750_init_desc(bh1750_i2c_dev_t *bh1750_dev, uint8_t addr, int port)
 
     bh1750_dev->port = port;
     bh1750_dev->addr = addr;
+    bh1750_dev->write_buf = (uint8_t*)malloc(sizeof(uint8_t)*2);
+    bh1750_dev->read_buf = (uint8_t*)malloc(sizeof(uint8_t)*2);
+
+    if (!bh1750_dev->write_buf || !bh1750_dev->read_buf) {
+        perror("malloc failed");
+        return STATUS_ERROR;
+    }
+
 
     if (pthread_mutex_init(&bh1750_dev->lock, NULL) != 0) {
         perror("Mutex init failed");
@@ -147,4 +162,13 @@ Status_t bh1750_init_desc(bh1750_i2c_dev_t *bh1750_dev, uint8_t addr, int port)
     return STATUS_OK;
 
 
+}
+
+Status_t bh1750_close(bh1750_i2c_dev_t *dev) {
+    if (!dev) return;
+
+    pthread_mutex_destroy(&dev->lock);
+    if (dev->write_buf) free(dev->write_buf);
+    if (dev->read_buf) free(dev->read_buf);
+    if (dev->port >= 0) close(dev->port);
 }

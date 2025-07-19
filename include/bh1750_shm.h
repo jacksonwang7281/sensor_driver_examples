@@ -42,26 +42,28 @@ typedef enum
 } bh1750_resolution_t;
 
 
-
-typedef struct {
-    pthread_mutex_t lock;     //   PTHREAD_PROCESS_SHARED
-    uint64_t        ts_ns;    //   量測時間（ns）
-    float           lux;      //   光照值
-} bh1750_data_t;
-
-
 typedef struct {
 
     int port;
     uint8_t addr;
     uint8_t *write_buf;
     uint8_t *read_buf;
+
     pthread_mutex_t lock;
 
 } bh1750_i2c_dev_t;
 
+typedef struct {
+    pthread_mutex_t lock;
+    uint64_t        ts_ns;
+    float           lux;
+} bh1750_data_t;
 
 
-Status_t bh1750_init_desc(bh1750_i2c_dev_t *bh1750_dev, uint8_t addr, int port);
+
+Status_t bh1750_init_desc(bh1750_i2c_dev_t *dev, uint8_t addr, int port);
+Status_t bh1750_setup(bh1750_i2c_dev_t *dev, bh1750_mode_t mode, bh1750_resolution_t resolution);
+Status_t bh1750_read(bh1750_i2c_dev_t *dev, uint16_t *lux_raw, float *lux_value);
+Status_t bh1750_close(bh1750_i2c_dev_t *dev);
 
 #endif
