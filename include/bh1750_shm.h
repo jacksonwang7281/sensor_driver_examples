@@ -15,6 +15,9 @@
 
 #define BH1750_ADDR  0x23 //!< I2C address when ADDR pin floating/low
 
+#define BH1750_ADDR_LO 0x23 //!< I2C address when ADDR pin floating/low
+#define BH1750_ADDR_HI 0x5c //!< I2C address when ADDR pin high
+
 typedef enum {
     STATUS_OK = 0,
     STATUS_ERROR = -1,
@@ -49,7 +52,8 @@ typedef struct {
 
 typedef struct {
 
-    int dev;
+    int port;
+    uint8_t addr;
     uint8_t *write_buf;
     uint8_t *read_buf;
     pthread_mutex_t lock;
@@ -58,6 +62,6 @@ typedef struct {
 
 
 
-void bh1750_dev_open(bh1750_i2c_dev_t *bh1750_dev);
+Status_t bh1750_init_desc(bh1750_i2c_dev_t *bh1750_dev, uint8_t addr, int port);
 
 #endif

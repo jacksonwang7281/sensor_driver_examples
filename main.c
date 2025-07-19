@@ -7,13 +7,30 @@
 #include <time.h>
 
 bh1750_i2c_dev_t bh1750_dev;
+#define I2C_BUS "dev/i2c-1"
 
 
-void device_init(void)
+int device_init(void)
 {
-    bh1750_dev_open(&bh1750_dev);
+    int i2c_port = open(I2C_BUS,O_RDWR);
 
+    if(i2c_port < 0)
+    {
+        printf("fail to open i2c bus\n");
+        return STATUS_ERROR;
+    }
 
+    if(ioctl(i2c_port,I2C_SLAVE,BH1750_ADDR) < 0)
+    {
+        printf("failed to set I2C_SLAVE address");
+        return STATUS_ERROR;
+    }
+    
+    if(bh1750_init_desc(&bh1750_dev,BH1750_ADDR,i2c_port) < 0)
+    {
+        printf("device setup failed\n");
+        return STATUS_ERROR;
+    };
 
 }
 
