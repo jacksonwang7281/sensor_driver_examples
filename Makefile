@@ -1,7 +1,7 @@
 # ───────────── 使用者可調整區 ─────────────
 
 TARGET    := bh1750_daemon              # 最終執行檔名稱
-SRCS      := main.c ./Hal/bh1750.c            # 所有 *.c 源碼
+SRCS      := main.c ./Hal/bh1750.c ./Hal/UsbLogger.c           # 所有 *.c 源碼
 INCDIRS   := -Iinclude                  # header 搜尋路徑
 CFLAGS    := -O2 -Wall $(INCDIRS)
 LDFLAGS   := -lrt -pthread

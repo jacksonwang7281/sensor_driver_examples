@@ -9,21 +9,18 @@
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 #include <time.h>
+#include <errno.h>
 
-#define BH1750_SHM_NAME   "/bh1750_shm"
+
 #define BH1750_SHM_SIZE   4096   // 4 KB，足夠放結構與一點預留
+#define RING_SIZE 1024
+#define Status_t int
 
 #define BH1750_ADDR  0x23 //!< I2C address when ADDR pin floating/low
 
 #define BH1750_ADDR_LO 0x23 //!< I2C address when ADDR pin floating/low
 #define BH1750_ADDR_HI 0x5c //!< I2C address when ADDR pin high
 
-typedef enum {
-    STATUS_OK = 0,
-    STATUS_ERROR = -1,
-    STATUS_TIMEOUT = -2,
-    STATUS_BUSY = -3
-} Status_t;
 
 typedef enum
 {
@@ -54,10 +51,23 @@ typedef struct {
 } bh1750_i2c_dev_t;
 
 typedef struct {
-    pthread_mutex_t lock;
+    
     uint64_t        ts_ns;
     float           lux;
 } bh1750_data_t;
+
+typedef struct {
+    bh1750_data_t data[RING_SIZE];
+    pthread_mutex_t lock;
+    size_t head;
+    size_t tail; // 新增，讓 consumer 用來追資料
+} shm_ring_t;
+
+
+
+
+
+
 
 
 
